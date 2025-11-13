@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KindWorld - Transform Kindness into Impact</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            background: #F9F9F9;
+            color: #000;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: #fff;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav a {
+            color: #000;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav a:hover {
+            color: #4A90E2;
+        }
+
+        .profile-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4A90E2, #357ABD);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Month Selector */
+        .month-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        .month-pill {
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            background: #fff;
+            border: 2px solid #E0E0E0;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .month-pill.active {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        .month-pill:hover {
+            border-color: #4A90E2;
+        }
+
+        /* Points Card */
+        .points-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .points-number {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 0.5rem;
+        }
+
+        .points-label {
+            font-size: 1.25rem;
+            color: #757575;
+            margin-bottom: 1rem;
+        }
+
+        .growth-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #4CAF50;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .exchange-link {
+            color: #4A90E2;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .exchange-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Chart Section */
+        .chart-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-placeholder {
+            height: 300px;
+            background: linear-gradient(180deg, #E3F2FD 0%, #fff 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-line {
+            position: absolute;
+            bottom: 20%;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4A90E2 0%, #7AB8FF 100%);
+            transform: translateY(-50%);
+        }
+
+        .chart-line::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(180deg, rgba(74, 144, 226, 0.1) 0%, transparent 100%);
+            bottom: 0;
+        }
+
+        /* Leaderboard */
+        .leaderboard-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .leaderboard-item:hover {
+            background: #F5F5F5;
+        }
+
+        .rank {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #757575;
+            min-width: 30px;
+        }
+
+        .rank.top {
+            color: #FFD700;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4A90E2, #357ABD);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .user-points {
+            color: #757575;
+            font-size: 0.9rem;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top: 1px solid #E0E0E0;
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            color: #757575;
+            text-decoration: none;
+            font-size: 0.75rem;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: #000;
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+                padding-bottom: 5rem;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+
+            .nav {
+                display: none;
+            }
+
+            .points-number {
+                font-size: 3rem;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .bottom-nav {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">KindWorld</div>
+        <nav class="nav">
+            <a href="#home">Home</a>
+            <a href="#missions">Missions</a>
+            <a href="#vouchers">Vouchers</a>
+            <a href="#leaderboard">Leaderboard</a>
+            <div class="profile-avatar">AC</div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Month Selector -->
+        <div class="month-selector">
+            <div class="month-pill">Dec 2025</div>
+            <div class="month-pill">Nov 2025</div>
+            <div class="month-pill active">Oct 2025</div>
+            <div class="month-pill">Sept 2025</div>
+            <div class="month-pill">Aug 2025</div>
+        </div>
+
+        <!-- Points Card -->
+        <div class="points-card">
+            <div class="points-number">28,760</div>
+            <div class="points-label">Compassion Points</div>
+            <div class="growth-indicator">
+                <span>↑</span>
+                <span>+20% month over month</span>
+            </div>
+            <a href="#exchange" class="exchange-link">Exchange Now! →</a>
+        </div>
+
+        <!-- Points Chart -->
+        <div class="chart-section">
+            <h2 class="chart-title">Points Statement</h2>
+            <div class="chart-placeholder">
+                <div class="chart-line"></div>
+                <span style="color: #757575; z-index: 1;">30-day points growth visualization</span>
+            </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="leaderboard-section">
+            <h2 class="section-title">Leaderboard</h2>
+            
+            <div class="leaderboard-item">
+                <div class="rank top">1</div>
+                <div class="avatar">SM</div>
+                <div class="user-info">
+                    <div class="user-name">Sarah Martinez</div>
+                    <div class="user-points">45,230 points</div>
+                </div>
+            </div>
+
+            <div class="leaderboard-item">
+                <div class="rank top">2</div>
+                <div class="avatar">JC</div>
+                <div class="user-info">
+                    <div class="user-name">James Chen</div>
+                    <div class="user-points">42,180 points</div>
+                </div>
+            </div>
+
+            <div class="leaderboard-item">
+                <div class="rank top">3</div>
+                <div class="avatar">EP</div>
+                <div class="user-info">
+                    <div class="user-name">Emma Patel</div>
+                    <div class="user-points">38,950 points</div>
+                </div>
+            </div>
+
+            <div class="leaderboard-item">
+                <div class="rank">4</div>
+                <div class="avatar">AC</div>
+                <div class="user-info">
+                    <div class="user-name">Alex Chen (You)</div>
+                    <div class="user-points">28,760 points</div>
+                </div>
+            </div>
+
+            <div class="leaderboard-item">
+                <div class="rank">5</div>
+                <div class="avatar">MJ</div>
+                <div class="user-info">
+                    <div class="user-name">Maria Johnson</div>
+                    <div class="user-points">26,420 points</div>
+                </div>
+            </div>
+
+            <div class="leaderboard-item">
+                <div class="rank">6</div>
+                <div class="avatar">DK</div>
+                <div class="user-info">
+                    <div class="user-name">David Kim</div>
+                    <div class="user-points">24,890 points</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav">
+        <a href="#home" class="nav-item active">
+            <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+            <span>Home</span>
+        </a>
+        <a href="#search" class="nav-item">
+            <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+            <span>Search</span>
+        </a>
+        <a href="#activity" class="nav-item">
+            <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <span>Activity</span>
+        </a>
+        <a href="#profile" class="nav-item">
+            <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+            <span>Profile</span>
+        </a>
+    </nav>
+</body>
+</html>

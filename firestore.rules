@@ -1,0 +1,452 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================================
+    // Helper Functions
+    // ============================================================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is the owner of the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Check if user has admin role
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Check if user has company role
+    function isCompany() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'company';
+    }
+    
+    // Check if user is admin or company
+    function isAdminOrCompany() {
+      return isAdmin() || isCompany();
+    }
+    
+    // Validate email format
+    function isValidEmail(email) {
+      return email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+    
+    // Validate points transaction amount
+    function isValidPointsAmount(amount) {
+      return amount is int && amount != 0;
+    }
+    
+    // Validate string is not empty
+    function isNonEmptyString(value) {
+      return value is string && value.size() > 0;
+    }
+    
+    // Validate mission status transitions
+    function isValidMissionStatusTransition(oldStatus, newStatus) {
+      return (oldStatus == 'draft' && newStatus in ['published', 'cancelled']) ||
+             (oldStatus == 'published' && newStatus in ['ongoing', 'cancelled']) ||
+             (oldStatus == 'ongoing' && newStatus in ['completed', 'cancelled']) ||
+             (oldStatus == 'completed' && newStatus == 'completed') ||
+             (oldStatus == 'cancelled' && newStatus == 'cancelled');
+    }
+    
+    // Validate timestamp is in the future
+    function isFutureTimestamp(timestamp) {
+      return timestamp > request.time;
+    }
+    
+    // Check if user has sufficient points for redemption
+    function hasSufficientPoints(userId, pointsCost) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.compassionPoints >= pointsCost;
+    }
+    
+    // ============================================================================
+    // Users Collection
+    // ============================================================================
+    
+    match /users/{userId} {
+      // Anyone can read user profiles (for leaderboard, etc.)
+      allow read: if isAuthenticated();
+      
+      // Users can create their own profile during signup
+      allow create: if isAuthenticated() && 
+                      request.auth.uid == userId &&
+                      request.resource.data.email is string &&
+                      isValidEmail(request.resource.data.email) &&
+                      request.resource.data.role == 'user' &&
+                      request.resource.data.compassionPoints == 0 &&
+                      request.resource.data.totalVolunteerHours == 0 &&
+                      isNonEmptyString(request.resource.data.displayName) &&
+                      request.resource.data.displayName.size() <= 100;
+      
+      // Users can update their own profile (limited fields)
+      allow update: if isOwner(userId) &&
+                      // Cannot change these fields
+                      request.resource.data.id == resource.data.id &&
+                      request.resource.data.email == resource.data.email &&
+                      request.resource.data.role == resource.data.role &&
+                      request.resource.data.compassionPoints == resource.data.compassionPoints &&
+                      request.resource.data.totalVolunteerHours == resource.data.totalVolunteerHours &&
+                      request.resource.data.createdAt == resource.data.createdAt &&
+                      // Validate updatable fields
+                      (request.resource.data.displayName == resource.data.displayName || 
+                       (isNonEmptyString(request.resource.data.displayName) && 
+                        request.resource.data.displayName.size() <= 100)) &&
+                      (request.resource.data.bio == resource.data.bio || 
+                       (request.resource.data.bio is string && 
+                        request.resource.data.bio.size() <= 500));
+      
+      // Admins can update any user
+      allow update: if isAdmin();
+      
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================================================
+    // Missions Collection
+    // ============================================================================
+    
+    match /missions/{missionId} {
+      // Anyone authenticated can read published missions
+      allow read: if isAuthenticated() && 
+                    (resource.data.status == 'published' || 
+                     resource.data.status == 'ongoing' ||
+                     resource.data.status == 'completed');
+      
+      // Admins can read all missions (including drafts)
+      allow read: if isAdmin();
+      
+      // Companies can read their sponsored missions
+      allow read: if isCompany() && 
+                    resource.data.sponsorId == request.auth.uid;
+      
+      // Only admins can create missions
+      allow create: if isAdmin() &&
+                      isNonEmptyString(request.resource.data.title) &&
+                      request.resource.data.title.size() <= 200 &&
+                      isNonEmptyString(request.resource.data.description) &&
+                      request.resource.data.description.size() <= 2000 &&
+                      request.resource.data.pointsReward is int &&
+                      request.resource.data.pointsReward > 0 &&
+                      request.resource.data.pointsReward <= 10000 &&
+                      request.resource.data.currentParticipants == 0 &&
+                      request.resource.data.createdBy == request.auth.uid &&
+                      request.resource.data.status in ['draft', 'published'] &&
+                      request.resource.data.category in ['volunteer', 'donation', 'charity', 'blood_drive', 'other'] &&
+                      request.resource.data.location.address is string &&
+                      request.resource.data.location.city is string &&
+                      isFutureTimestamp(request.resource.data.date);
+      
+      // Admins can update missions with validation
+      allow update: if isAdmin() &&
+                      // Validate status transitions
+                      isValidMissionStatusTransition(resource.data.status, request.resource.data.status) &&
+                      // Cannot change creator
+                      request.resource.data.createdBy == resource.data.createdBy &&
+                      // Validate points reward if changed
+                      (request.resource.data.pointsReward == resource.data.pointsReward ||
+                       (request.resource.data.pointsReward > 0 && 
+                        request.resource.data.pointsReward <= 10000)) &&
+                      // Validate title if changed
+                      (request.resource.data.title == resource.data.title ||
+                       (isNonEmptyString(request.resource.data.title) && 
+                        request.resource.data.title.size() <= 200)) &&
+                      // Validate description if changed
+                      (request.resource.data.description == resource.data.description ||
+                       (isNonEmptyString(request.resource.data.description) && 
+                        request.resource.data.description.size() <= 2000));
+      
+      // System can update participant count (via Cloud Function)
+      allow update: if isAuthenticated() &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['currentParticipants', 'updatedAt']);
+      
+      // Only admins can delete missions
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================================================
+    // Mission Participants Subcollection
+    // ============================================================================
+    
+    match /missions/{missionId}/participants/{userId} {
+      // Users can read their own participation
+      allow read: if isOwner(userId);
+      
+      // Admins can read all participants
+      allow read: if isAdmin();
+      
+      // Users can join missions (create participation record)
+      allow create: if isOwner(userId) &&
+                      request.resource.data.userId == userId &&
+                      request.resource.data.missionId == missionId &&
+                      request.resource.data.status == 'joined' &&
+                      // Check mission is published or ongoing
+                      get(/databases/$(database)/documents/missions/$(missionId)).data.status in ['published', 'ongoing'];
+      
+      // Users can update their participation status (limited transitions)
+      allow update: if isOwner(userId) &&
+                      request.resource.data.userId == resource.data.userId &&
+                      request.resource.data.missionId == resource.data.missionId &&
+                      // Valid status transitions: joined -> completed or cancelled
+                      ((resource.data.status == 'joined' && 
+                        request.resource.data.status in ['completed', 'cancelled']) ||
+                       (resource.data.status == 'completed' && 
+                        request.resource.data.status == 'completed'));
+      
+      // Admins can update any participation
+      allow update: if isAdmin();
+    }
+    
+    // ============================================================================
+    // Points Transactions Collection
+    // ============================================================================
+    
+    match /pointsTransactions/{transactionId} {
+      // Users can read their own transactions
+      allow read: if isAuthenticated() && 
+                    resource.data.userId == request.auth.uid;
+      
+      // Admins can read all transactions
+      allow read: if isAdmin();
+      
+      // Only system (Cloud Functions) or admins can create transactions
+      allow create: if isAdmin() &&
+                      request.resource.data.userId is string &&
+                      isValidPointsAmount(request.resource.data.amount) &&
+                      request.resource.data.type in ['mission_completion', 'voucher_redemption', 'bonus', 'adjustment'] &&
+                      isNonEmptyString(request.resource.data.description) &&
+                      request.resource.data.description.size() <= 500 &&
+                      // Validate amount limits
+                      request.resource.data.amount >= -100000 &&
+                      request.resource.data.amount <= 100000 &&
+                      // Ensure timestamp is set
+                      request.resource.data.timestamp is timestamp;
+      
+      // No updates or deletes allowed (immutable ledger)
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // ============================================================================
+    // Vouchers Collection
+    // ============================================================================
+    
+    match /vouchers/{voucherId} {
+      // Anyone authenticated can read active vouchers
+      allow read: if isAuthenticated() && resource.data.isActive == true;
+      
+      // Admins can read all vouchers
+      allow read: if isAdmin();
+      
+      // Only admins can create vouchers
+      allow create: if isAdmin() &&
+                      isNonEmptyString(request.resource.data.brandName) &&
+                      request.resource.data.brandName.size() <= 100 &&
+                      isNonEmptyString(request.resource.data.title) &&
+                      request.resource.data.title.size() <= 200 &&
+                      request.resource.data.pointsCost is int &&
+                      request.resource.data.pointsCost > 0 &&
+                      request.resource.data.pointsCost <= 100000 &&
+                      request.resource.data.monetaryValue is int &&
+                      request.resource.data.monetaryValue > 0 &&
+                      request.resource.data.stock is int &&
+                      request.resource.data.stock >= 0 &&
+                      request.resource.data.category in ['7-eleven', 'familymart', 'px-mart', 'other'] &&
+                      request.resource.data.isActive is bool;
+      
+      // Admins can update vouchers with validation
+      allow update: if isAdmin() &&
+                      // Validate fields if changed
+                      (request.resource.data.pointsCost == resource.data.pointsCost ||
+                       (request.resource.data.pointsCost > 0 && 
+                        request.resource.data.pointsCost <= 100000)) &&
+                      (request.resource.data.stock == resource.data.stock ||
+                       request.resource.data.stock >= 0);
+      
+      // System can decrement stock (via Cloud Function)
+      allow update: if isAuthenticated() &&
+                      request.resource.data.stock == resource.data.stock - 1 &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['stock']);
+      
+      // Only admins can delete vouchers
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================================================
+    // Redemptions Collection
+    // ============================================================================
+    
+    match /redemptions/{redemptionId} {
+      // Users can read their own redemptions
+      allow read: if isAuthenticated() && 
+                    resource.data.userId == request.auth.uid;
+      
+      // Admins can read all redemptions
+      allow read: if isAdmin();
+      
+      // Only system (Cloud Functions) can create redemptions
+      allow create: if isAdmin() &&
+                      request.resource.data.userId is string &&
+                      request.resource.data.voucherId is string &&
+                      request.resource.data.pointsSpent is int &&
+                      request.resource.data.pointsSpent > 0 &&
+                      request.resource.data.status == 'pending' &&
+                      isNonEmptyString(request.resource.data.redemptionCode) &&
+                      request.resource.data.redemptionCode.size() >= 6 &&
+                      request.resource.data.redemptionCode.size() <= 50 &&
+                      request.resource.data.redeemedAt is timestamp &&
+                      request.resource.data.expiresAt is timestamp &&
+                      request.resource.data.expiresAt > request.resource.data.redeemedAt &&
+                      // Verify user has sufficient points
+                      hasSufficientPoints(request.resource.data.userId, request.resource.data.pointsSpent) &&
+                      // Verify voucher exists and is active
+                      get(/databases/$(database)/documents/vouchers/$(request.resource.data.voucherId)).data.isActive == true &&
+                      get(/databases/$(database)/documents/vouchers/$(request.resource.data.voucherId)).data.stock > 0;
+      
+      // System can update redemption status with validation
+      allow update: if isAdmin() ||
+                      (isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['status', 'usedAt']) &&
+                       // Valid status transitions
+                       ((resource.data.status == 'pending' && 
+                         request.resource.data.status == 'issued') ||
+                        (resource.data.status == 'issued' && 
+                         request.resource.data.status == 'used') ||
+                        (resource.data.status in ['pending', 'issued'] && 
+                         request.resource.data.status == 'expired')));
+      
+      // No deletes allowed
+      allow delete: if false;
+    }
+    
+    // ============================================================================
+    // Badges Collection
+    // ============================================================================
+    
+    match /badges/{badgeId} {
+      // Anyone authenticated can read badges
+      allow read: if isAuthenticated();
+      
+      // Only admins can create badges
+      allow create: if isAdmin() &&
+                      isNonEmptyString(request.resource.data.name) &&
+                      request.resource.data.name.size() <= 100 &&
+                      isNonEmptyString(request.resource.data.description) &&
+                      request.resource.data.description.size() <= 500 &&
+                      request.resource.data.criteria.type in ['hours', 'missions', 'points', 'streak'] &&
+                      request.resource.data.criteria.threshold is int &&
+                      request.resource.data.criteria.threshold > 0 &&
+                      request.resource.data.criteria.threshold <= 1000000 &&
+                      request.resource.data.rarity in ['common', 'rare', 'epic', 'legendary'];
+      
+      // Only admins can update badges
+      allow update: if isAdmin();
+      
+      // Only admins can delete badges
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================================================
+    // User Badges Subcollection
+    // ============================================================================
+    
+    match /users/{userId}/earnedBadges/{badgeId} {
+      // Users can read their own badges
+      allow read: if isOwner(userId);
+      
+      // Anyone can read badges for leaderboard/profile display
+      allow read: if isAuthenticated();
+      
+      // Only system (Cloud Functions) can award badges
+      allow create: if isAdmin() &&
+                      request.resource.data.badgeId is string &&
+                      request.resource.data.earnedAt is timestamp &&
+                      // Verify badge exists
+                      exists(/databases/$(database)/documents/badges/$(request.resource.data.badgeId));
+      
+      // No updates or deletes
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // ============================================================================
+    // Leaderboard Collection
+    // ============================================================================
+    
+    match /leaderboard/{entryId} {
+      // Anyone authenticated can read leaderboard
+      allow read: if isAuthenticated();
+      
+      // Only system (Cloud Functions) can update leaderboard
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // ============================================================================
+    // Companies Collection
+    // ============================================================================
+    
+    match /companies/{companyId} {
+      // Anyone authenticated can read company info
+      allow read: if isAuthenticated();
+      
+      // Company users can read their own company data
+      allow read: if isCompany() && request.auth.uid == companyId;
+      
+      // Only admins can create companies
+      allow create: if isAdmin() &&
+                      isNonEmptyString(request.resource.data.name) &&
+                      request.resource.data.name.size() <= 200 &&
+                      isNonEmptyString(request.resource.data.contactEmail) &&
+                      isValidEmail(request.resource.data.contactEmail) &&
+                      request.resource.data.totalPointsSponsored == 0;
+      
+      // Companies can update their own profile (limited fields)
+      allow update: if isCompany() && 
+                      request.auth.uid == companyId &&
+                      request.resource.data.id == resource.data.id &&
+                      request.resource.data.createdAt == resource.data.createdAt &&
+                      // Cannot change these fields
+                      request.resource.data.totalPointsSponsored == resource.data.totalPointsSponsored &&
+                      // Validate updatable fields
+                      (request.resource.data.description == resource.data.description ||
+                       (request.resource.data.description is string && 
+                        request.resource.data.description.size() <= 1000));
+      
+      // Admins can update any company
+      allow update: if isAdmin();
+      
+      // Only admins can delete companies
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================================================
+    // Analytics Collection (Company-specific)
+    // ============================================================================
+    
+    match /analytics/{companyId} {
+      // Companies can read their own analytics
+      allow read: if isCompany() && request.auth.uid == companyId;
+      
+      // Admins can read all analytics
+      allow read: if isAdmin();
+      
+      // Only system (Cloud Functions) can write analytics
+      allow create, update: if false;
+      allow delete: if false;
+    }
+  }
+}

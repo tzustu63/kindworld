@@ -1,0 +1,178 @@
+name: Deploy Android to Google Play (Production)
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '!v*-beta*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., 1.0.0)'
+        required: true
+
+jobs:
+  deploy-android-production:
+    name: Deploy to Google Play Production
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: android
+      
+      - name: Setup Fastlane
+        run: |
+          cd android
+          bundle install
+      
+      - name: Decode Keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64_PROD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
+      
+      - name: Create keystore.properties
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD_PROD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS_PROD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD_PROD }}
+        run: |
+          cat > android/keystore.properties << EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=release.keystore
+          EOF
+      
+      - name: Increment Version Code
+        run: |
+          cd android
+          # Update versionCode in build.gradle
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" app/build.gradle
+      
+      - name: Build Release AAB
+        run: |
+          cd android
+          ./gradlew bundleRelease --no-daemon
+      
+      - name: Setup Google Play Service Account
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          echo "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > android/service-account.json
+      
+      - name: Deploy to Production Track
+        env:
+          SUPPLY_JSON_KEY: android/service-account.json
+          SUPPLY_PACKAGE_NAME: com.kindworld
+          SUPPLY_TRACK: production
+          SUPPLY_ROLLOUT: "0.1"
+        run: |
+          cd android
+          bundle exec fastlane deploy_production
+      
+      - name: Clean up sensitive files
+        if: always()
+        run: |
+          rm -f android/app/release.keystore
+          rm -f android/keystore.properties
+          rm -f android/service-account.json
+      
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-production
+          path: android/app/build/outputs/bundle/release/app-release.aab
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          files: android/app/build/outputs/bundle/release/app-release.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload build artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-production-build-logs
+          path: |
+            android/fastlane/report.xml
+            android/fastlane/test_output
+      
+      - name: Notify Slack on Success
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🚀 Android Production build deployed to Google Play successfully!",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Android Production Deployment*\n🚀 Build ${{ github.run_number }} deployed to Google Play Production (10% rollout)\n*Version:* ${{ github.ref_name }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "❌ Android Production deployment to Google Play failed!",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Android Production Deployment*\n❌ Build ${{ github.run_number }} failed\n*Version:* ${{ github.ref_name }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

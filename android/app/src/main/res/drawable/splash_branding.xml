@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash Screen Branding (App Name and Tagline) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- This is a placeholder for branding text -->
+    <!-- In production, use a PNG image with "KindWorld" text -->
+    <!-- Maximum height: 200dp -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent"/>
+            <size
+                android:width="200dp"
+                android:height="80dp"/>
+        </shape>
+    </item>
+</layer-list>

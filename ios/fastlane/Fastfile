@@ -1,0 +1,83 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # Increment build number
+    increment_build_number(
+      xcodeproj: "KindWorld.xcodeproj"
+    )
+
+    # Build the app
+    build_app(
+      workspace: "KindWorld.xcworkspace",
+      scheme: "KindWorld",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.kindworld" => "match AppStore com.kindworld"
+        }
+      }
+    )
+
+    # Upload to TestFlight
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      distribute_external: false,
+      notify_external_testers: false
+    )
+
+    # Clean up
+    clean_build_artifacts
+  end
+
+  desc "Push a new release build to the App Store"
+  lane :release do
+    # Increment build number
+    increment_build_number(
+      xcodeproj: "KindWorld.xcodeproj"
+    )
+
+    # Build the app
+    build_app(
+      workspace: "KindWorld.xcworkspace",
+      scheme: "KindWorld",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.kindworld" => "match AppStore com.kindworld"
+        }
+      }
+    )
+
+    # Upload to App Store Connect
+    upload_to_app_store(
+      skip_metadata: false,
+      skip_screenshots: false,
+      submit_for_review: false,
+      automatic_release: false,
+      force: true
+    )
+
+    # Clean up
+    clean_build_artifacts
+  end
+
+  desc "Download certificates and provisioning profiles"
+  lane :certificates do
+    match(
+      type: "appstore",
+      readonly: true
+    )
+  end
+
+  desc "Run tests"
+  lane :test do
+    run_tests(
+      workspace: "KindWorld.xcworkspace",
+      scheme: "KindWorld",
+      devices: ["iPhone 14"],
+      clean: true
+    )
+  end
+end

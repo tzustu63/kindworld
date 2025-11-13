@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KindWorld Splash Screen Icon -->
+<!-- This is a placeholder. Replace with actual app icon design -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+    
+    <!-- Background circle (optional) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M144,144m-144,0a144,144 0,1 1,288 0a144,144 0,1 1,-288 0"/>
+    
+    <!-- Heart icon representing compassion -->
+    <!-- This is a simplified heart shape. Replace with actual design -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M144,220 L100,176 C80,156 72,140 72,120 C72,92 92,72 120,72 C132,72 144,80 144,80 C144,80 156,72 168,72 C196,72 216,92 216,120 C216,140 208,156 188,176 L144,220 Z"/>
+    
+    <!-- Optional: Add a subtle globe/world element -->
+    <path
+        android:fillColor="#4A90E2"
+        android:fillAlpha="0.3"
+        android:pathData="M144,100 C144,100 156,108 156,120 C156,132 144,140 144,140 C144,140 132,132 132,120 C132,108 144,100 144,100 Z"/>
+</vector>

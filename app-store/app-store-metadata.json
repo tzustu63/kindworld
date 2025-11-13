@@ -1,0 +1,187 @@
+{
+  "app_name": "KindWorld",
+  "bundle_id": {
+    "ios": "com.kindworld.app",
+    "android": "com.kindworld.app"
+  },
+  "version": "1.0.0",
+  "build_number": "1",
+  
+  "categories": {
+    "ios": {
+      "primary": "Lifestyle",
+      "secondary": "Social Networking"
+    },
+    "android": {
+      "primary": "Lifestyle",
+      "secondary": "Social"
+    }
+  },
+  
+  "age_rating": {
+    "ios": "4+",
+    "android": "Everyone"
+  },
+  
+  "subtitle": {
+    "ios": "Transform kindness into impact through gamified volunteering",
+    "android": "Transform kindness into impact through gamified volunteering"
+  },
+  
+  "keywords": {
+    "ios": "volunteer, charity, donation, CSR, social impact, kindness, rewards, points, missions, community",
+    "android": [
+      "volunteer",
+      "volunteering",
+      "charity",
+      "donation",
+      "social good",
+      "CSR",
+      "corporate social responsibility",
+      "kindness",
+      "compassion",
+      "rewards",
+      "points",
+      "gamification",
+      "missions",
+      "community service",
+      "non-profit",
+      "NGO",
+      "social impact",
+      "leaderboard",
+      "badges",
+      "achievements"
+    ]
+  },
+  
+  "promotional_text": {
+    "ios": "Transform your compassion into real rewards. Join volunteer missions, earn points, and make a measurable impact in your community. Download now and start making a difference!"
+  },
+  
+  "urls": {
+    "support": "https://kindworld.app/support",
+    "marketing": "https://kindworld.app",
+    "privacy_policy": "https://kindworld.app/privacy",
+    "terms_of_service": "https://kindworld.app/terms"
+  },
+  
+  "contact": {
+    "email": "support@kindworld.app",
+    "privacy_email": "privacy@kindworld.app",
+    "legal_email": "legal@kindworld.app"
+  },
+  
+  "copyright": "© 2025 KindWorld. All rights reserved.",
+  
+  "whats_new": {
+    "version_1.0.0": "🎉 Welcome to KindWorld!\n\nWe're excited to launch KindWorld, your new platform for transforming compassion into impact.\n\n**In this release:**\n• Browse and join volunteer missions\n• Earn Compassion Points for your contributions\n• Redeem points for rewards from partner retailers\n• Track your impact with beautiful visualizations\n• Climb the leaderboard and earn badges\n• Connect with a community of changemakers\n\nThank you for being part of our mission to make the world a kinder place. We'd love to hear your feedback!"
+  },
+  
+  "localization": {
+    "supported_languages": [
+      "en-US",
+      "zh-TW",
+      "zh-CN",
+      "ja",
+      "ko"
+    ],
+    "default_language": "en-US"
+  },
+  
+  "content_rating": {
+    "violence": false,
+    "profanity": false,
+    "sexual_content": false,
+    "gambling": false,
+    "alcohol_tobacco_drugs": false,
+    "horror_fear": false
+  },
+  
+  "required_device_capabilities": {
+    "ios": [
+      "armv7",
+      "arm64"
+    ],
+    "android": {
+      "min_sdk": 21,
+      "target_sdk": 33
+    }
+  },
+  
+  "permissions": {
+    "ios": {
+      "NSCameraUsageDescription": "KindWorld needs access to your camera to take profile photos and upload mission images.",
+      "NSPhotoLibraryUsageDescription": "KindWorld needs access to your photo library to select profile photos and mission images.",
+      "NSLocationWhenInUseUsageDescription": "KindWorld uses your location to show nearby volunteer missions and events.",
+      "NSUserTrackingUsageDescription": "This allows us to provide you with personalized mission recommendations and improve your experience."
+    },
+    "android": [
+      "android.permission.INTERNET",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.CAMERA",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.ACCESS_COARSE_LOCATION"
+    ]
+  },
+  
+  "app_store_optimization": {
+    "target_keywords": [
+      "volunteer app",
+      "charity app",
+      "donation app",
+      "social impact",
+      "CSR platform",
+      "volunteer opportunities",
+      "community service",
+      "rewards for volunteering",
+      "gamified volunteering",
+      "compassion points"
+    ],
+    "competitors": [
+      "VolunteerMatch",
+      "GiveGab",
+      "Golden Volunteer",
+      "Track It Forward"
+    ]
+  },
+  
+  "screenshots": {
+    "ios": {
+      "6.7_inch": {
+        "count": 5,
+        "resolution": "1290x2796"
+      },
+      "12.9_inch_ipad": {
+        "count": 5,
+        "resolution": "2048x2732"
+      }
+    },
+    "android": {
+      "phone": {
+        "count": 5,
+        "resolution": "1080x1920"
+      },
+      "tablet_7": {
+        "count": 5,
+        "resolution": "1200x1920"
+      }
+    }
+  },
+  
+  "app_preview_video": {
+    "duration": "30 seconds",
+    "format": "MP4",
+    "resolution": "1080p",
+    "aspect_ratio": "9:16"
+  },
+  
+  "review_notes": {
+    "test_account": {
+      "email": "reviewer@kindworld.app",
+      "password": "[To be provided during submission]"
+    },
+    "special_instructions": "The app requires Firebase backend services. Test account is pre-populated with sample missions and points for review purposes. Location permissions are optional but enhance the mission discovery experience."
+  }
+}
