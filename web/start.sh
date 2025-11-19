@@ -4,8 +4,23 @@
 # Debug: Print current directory and environment
 echo "Current directory: $(pwd)"
 echo "PORT environment variable: ${PORT:-not set}"
-echo "Listing files in current directory:"
-ls -la
+echo "NODE_ENV: ${NODE_ENV:-not set}"
+
+# Check if node_modules exists
+if [ ! -d "node_modules" ]; then
+  echo "ERROR: node_modules not found!"
+  exit 1
+fi
+
+# Check if serve is installed
+if [ ! -f "node_modules/.bin/serve" ]; then
+  echo "ERROR: serve binary not found in node_modules/.bin/"
+  echo "Checking node_modules:"
+  ls -la node_modules/.bin/ | grep serve || echo "serve not found"
+  exit 1
+fi
+
+echo "serve binary found"
 
 # Check if dist directory exists
 if [ ! -d "dist" ]; then
@@ -24,8 +39,8 @@ PORT=${PORT:-3000}
 
 echo "Starting serve on port $PORT..."
 echo "Serving from: $(pwd)/dist"
-echo "Command: serve -s dist -l $PORT"
+echo "Command: node_modules/.bin/serve -s dist -l $PORT"
 
-# Start serve with SPA mode
-exec serve -s dist -l $PORT
+# Start serve with SPA mode using absolute path
+exec node_modules/.bin/serve -s dist -l $PORT
 
