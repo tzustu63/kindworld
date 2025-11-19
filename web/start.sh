@@ -37,10 +37,11 @@ ls -la dist/ | head -20
 # Use PORT environment variable, fallback to 3000
 PORT=${PORT:-3000}
 
-echo "Starting serve on port $PORT..."
+echo "Starting serve on port $PORT (listening on 0.0.0.0)..."
 echo "Serving from: $(pwd)/dist"
-echo "Command: node_modules/.bin/serve -s dist -l $PORT"
+echo "Command: node_modules/.bin/serve -s dist -l 0.0.0.0:$PORT"
 
 # Start serve with SPA mode using absolute path
-exec node_modules/.bin/serve -s dist -l $PORT
+# Use 0.0.0.0 to listen on all interfaces (required for Railway)
+exec node_modules/.bin/serve -s dist -l 0.0.0.0:$PORT
 
