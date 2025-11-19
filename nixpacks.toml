@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs-18_x"]
 
 [phases.install]
-cmds = ["cd web && npm ci"]
+cmds = ["cd web && npm install"]
 
 [phases.build]
 cmds = ["cd web && npm run build"]
