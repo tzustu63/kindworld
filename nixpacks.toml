@@ -8,5 +8,5 @@ cmds = ["cd web && npm install --include=dev"]
 cmds = ["cd web && npm run build"]
 
 [start]
-cmd = "cd web && npm start"
+cmd = "cd web && chmod +x start.sh && sh start.sh"
 
